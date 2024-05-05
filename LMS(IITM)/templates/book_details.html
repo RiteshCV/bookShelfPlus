@@ -1,0 +1,533 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ book['B_Name'] }} - Book Details</title>
+    <link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='css/bootstrap.min.css') }}">
+    <style>
+        html, body {
+            height: 100%;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .container {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .footer {
+            padding: 10px 0;
+            background-color: #343a40;
+            color: #ffffff;
+            text-align: center;
+        }
+
+        .img-container {
+            position: relative;
+            width: 375px;
+            height: 375px;
+        }
+
+        .img-container canvas {
+            display: block;
+            max-width: 100%;
+            max-height: 100%;
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            z-index: 9999;
+            background-color: rgba(0, 0, 0, 0.8);
+            padding: 20px;
+            border-radius: 5px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.5);
+        }
+
+        .img-container img {
+            display: block;
+            width: 100%;
+            height: auto;
+            transition: filter 0.1s ease;
+        }
+
+        .img-container:hover img {
+            filter: blur(1px);
+        }
+
+        .overlay-text {
+            position: absolute;
+            top: 70%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            color: white;
+            font-size: 24px;
+            font-weight: bold;
+            opacity: 0;
+            transition: opacity 0.2s ease;
+        }
+
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            background-color: rgba(0, 0, 0, 0.8);
+        }
+
+        .modal-overlay canvas {
+            position: fixed;
+            max-width: 100%;
+            max-height: 85vh;
+            border-radius: 5px;
+            top: 5%;
+            left: 35%;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.5);
+            zoom: 100%;
+        }
+
+        .img-container:hover .overlay-text {
+            opacity: 0.75;
+        }
+    </style>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.11.338/pdf.min.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const downloadPdfButton = document.getElementById('downloadPdfButton');
+            const reDownloadPdfButton = document.getElementById('reDownloadPdfButton');
+            const confirmDownloadModal = document.getElementById('confirmDownloadModal');
+            const returnBookButton = document.getElementById('returnBookButton');
+            const confirmReturnModal = document.getElementById('confirmReturnModal');
+            const closeReturnModalBtn = document.getElementById('closeReturnModal');
+            const cancelReturnBtn = document.getElementById('cancelReturnBtn');
+            const confirmReturnBtn = document.getElementById('confirmReturnBtn');
+            const feedbackModal = document.getElementById('feedbackModal');
+            const closeFeedbackModalBtn = document.getElementById('closeFeedbackModalBtn');
+            const submitFeedbackBtn = document.getElementById('submitFeedbackBtn');
+            const pdfUrl = '{{ url_for('static', filename='PDFs/' + book['PDF']) }}';
+            const container = document.querySelector('.img-container');
+            const pdfContainer = document.getElementById('pdfContainer');
+            const clickToRead = document.getElementById('readPdfBtn');
+            const details = document.getElementById('details');
+            const status = '{{ status }}';
+            const availability = '{{ book["Availability"] }}';
+            var maxPage;
+            var cur_page = 1;
+            async function renderPDF(pdfUrl, container, currentPageNumber) {
+                console.log('Rendering page:', currentPageNumber);
+                cur_page = currentPageNumber;
+                const loadingTask = pdfjsLib.getDocument(pdfUrl);
+                const pdfDocument = await loadingTask.promise;
+                const page = await pdfDocument.getPage(currentPageNumber);
+                const scale = 1.0;
+                const viewport = page.getViewport({ scale });
+                const canvas = document.createElement('canvas');
+                const context = canvas.getContext('2d');
+                canvas.height = viewport.height;
+                canvas.width = viewport.width;
+                await page.render({
+                    canvasContext: context,
+                    viewport: viewport
+                }).promise.then(() => {
+                    container.appendChild(canvas);
+                    document.addEventListener('keydown', handleKeyDown);
+                    function handleKeyDown(event) {
+                        if (availability === 'Unavailable') {
+                            maxPage = 1;
+                        }
+                        else if (status === 'Reading') {
+                            maxPage = {{ book['No_of_Pages'] }};
+                        }
+                        else {
+                            maxPage = 10;
+                        }
+                        if (event.key === 'ArrowLeft' && currentPageNumber >= 1) {
+                            currentPageNumber--;
+                            cur_page = currentPageNumber;
+                            renderPDF(pdfUrl, container, currentPageNumber);
+                        } else if (event.key === 'ArrowRight' && currentPageNumber < maxPage) {
+                            currentPageNumber++;
+                            cur_page = currentPageNumber;
+                            renderPDF(pdfUrl, container, currentPageNumber);
+                        }
+                    }
+                });
+                pdfContainer.innerHTML = '';
+                pdfContainer.style.display = 'block';
+                details.style.filter = 'blur(5px)';
+                details.style.pointerEvents = 'none';
+                pdfContainer.appendChild(canvas);
+            }
+            if (clickToRead) {
+                clickToRead.addEventListener('click', function() {
+                    renderPDF(pdfUrl, container, {{current_page}});
+                });
+                document.addEventListener('keydown', function(event) {
+                    if (event.key === 'Escape' && pdfContainer.style.display === 'block') {
+                        pdfContainer.style.display = 'none';
+                        details.style.filter = 'none';
+                        details.style.pointerEvents = 'auto';
+                        const requestData = {
+                            book_id: '{{ book["Book_ID"] }}',
+                            page: cur_page
+                        };
+                        fetch('/update_page', {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json'
+                            },
+                            body: JSON.stringify(requestData)
+                        })
+                        .then(response => {
+                            if (!response.ok) {
+                                throw new Error('Failed to update page');
+                            }
+                            return response.json();
+                        })
+                        .then(data => {
+                            console.log('Page updated successfully:', data);
+                        })
+                        .catch(error => {
+                            console.error('Error updating page:', error);
+                        });
+                        window.location.reload();
+                    }
+                });
+            }
+            if (downloadPdfButton && confirmDownloadModal) {
+                downloadPdfButton.addEventListener('click', function(event) {
+                    event.preventDefault();
+                    confirmDownloadModal.style.display = 'block';
+                });
+                const cancelDownloadBtn = document.getElementById('cancelDownloadBtn');
+                const confirmDownloadBtn = document.getElementById('confirmDownloadBtn');
+                const closeModalBtn = document.getElementById('closeModal');
+
+                if (cancelDownloadBtn && confirmDownloadBtn) {
+                    cancelDownloadBtn.addEventListener('click', function() {
+                        confirmDownloadModal.style.display = 'none';
+                    });
+                    closeModalBtn.addEventListener('click', function() {
+                        confirmDownloadModal.style.display = 'none';
+                    });
+                    confirmDownloadBtn.addEventListener('click', function() {
+                        const bookId = '{{ book["Book_ID"] }}';
+                        const downloadUrl = `/download_pdf?book_id=${bookId}`;
+                        const link = document.createElement('a');
+                        link.href = downloadUrl;
+                        link.style.display = 'none';
+                        document.body.appendChild(link);
+                        link.click();
+                        document.body.removeChild(link);
+                        confirmDownloadModal.style.display = 'none';
+                    });
+                    document.addEventListener('keydown', function(event) {
+                        if (event.key === 'Escape' && confirmDownloadModal.style.display === 'block') {
+                            confirmDownloadModal.style.display = 'none';
+                        }
+                    });
+                }
+            }
+            if (reDownloadPdfButton) {
+                reDownloadPdfButton.addEventListener('click', function(event) {
+                    event.preventDefault();
+                    const bookId = '{{ book["Book_ID"] }}';
+                    const downloadUrl = `/download_pdf?book_id=${bookId}`;
+                    const link = document.createElement('a');
+                    link.href = downloadUrl;
+                    link.style.display = 'none';
+                    document.body.appendChild(link);
+                    link.click();
+                    document.body.removeChild(link);
+                });
+            }
+            if (returnBookButton && confirmReturnModal && closeReturnModalBtn && cancelReturnBtn && confirmReturnBtn) {
+                returnBookButton.addEventListener('click', function(event) {
+                    event.preventDefault();
+                    confirmReturnModal.style.display = 'block';
+                });
+
+                closeReturnModalBtn.addEventListener('click', function() {
+                    confirmReturnModal.style.display = 'none';
+                });
+
+                cancelReturnBtn.addEventListener('click', function() {
+                    confirmReturnModal.style.display = 'none';
+                });
+
+                confirmReturnBtn.addEventListener('click', function() {
+                    const bookId = '{{ book["Book_ID"] }}';
+                    fetch(`/return?book_id=${bookId}`, { method: 'POST' })
+                        .then(response => {
+                            if (!response.ok) {
+                                console.error('Failed to return book');
+                            }
+                        })
+                        .catch(error => {
+                            console.error('Error returning book:', error);
+                        });
+                    confirmReturnModal.style.display = 'none';
+                });
+
+                document.addEventListener('keydown', function(event) {
+                    if (event.key === 'Escape' && confirmReturnModal.style.display === 'block') {
+                        confirmReturnModal.style.display = 'none';
+                    }
+                });
+            }
+            if (confirmReturnBtn && feedbackModal) {
+                confirmReturnBtn.addEventListener('click', function() {
+                    feedbackModal.style.display = 'block';
+                });
+                closeFeedbackModalBtn.addEventListener('click', function() {
+                    feedbackModal.style.display = 'none';
+                    window.location.reload();
+                });
+                document.addEventListener('keydown', function(event) {
+                    if (event.key === 'Escape' && feedbackModal.style.display === 'block') {
+                        feedbackModal.style.display = 'none';
+                        window.location.reload();
+                    }
+                });
+            }
+            if (submitFeedbackBtn) {
+                submitFeedbackBtn.addEventListener('click', function() {
+                    const rating = document.getElementById('rating').value;
+                    const feedback = document.getElementById('feedbackText').value;
+                    if (rating.trim() === '' || isNaN(rating) || rating < 1 || rating > 5) {
+                        alert('Please provide a valid rating between 1 and 5.');
+                        return;
+                    }
+                    fetch('/submit_feedback', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({
+                            rating: rating,
+                            feedback: feedback,
+                            book_id: '{{ book["Book_ID"] }}'
+                        })
+                    })
+                    .then(response => {
+                        if (response.ok) {
+                            window.location.reload();
+                        } else {
+                            console.error('Failed to submit feedback');
+                        }
+                    })
+                    .catch(error => {
+                        console.error('Error submitting feedback:', error);
+                    });
+                });
+            }
+        });
+    </script>
+</head>
+<body>
+    <nav class="navbar navbar-expand-md navbar-dark bg-dark">
+        <a class="navbar-brand tab-content tabindex-0" href="/">
+            <img class="img-thumbnail bg-dark border-0" src="{{ url_for('static', filename='Logo.png') }}" width="100" height="60" alt="TextTrove">
+        </a>
+        <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarSupportedContent" aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
+            <span class="navbar-toggler-icon"></span>
+        </button>
+
+        <div class="collapse navbar-collapse" id="navbarSupportedContent">
+            <ul class="navbar-nav ml-auto">
+                <li class="nav-item h4">
+                    <a class="nav-link {% if request.path == '/' or request.path.startswith('/book') %}active{% endif %}" href="/">Home</a>
+                </li>
+                <li class="nav-item h4">
+                    <a class="nav-link {% if request.path == '#' or request.path.startswith('/section') %}active{% endif %}" href="/sections">Sections</a>
+                </li>
+                {%  if user_type == 'Librarian' %}
+                    <li class="nav-item h4">
+                        <a class="nav-link {% if request.path == '/Manage' %}active{% endif %}" href="/Manage">Manage</a>
+                    </li>
+                {% endif %}
+                <li class="nav-item h4">
+                    {% if logged_in %}
+                        <a class="nav-link {% if request.path == '/account' %}active{% endif %}" href="/account">Account</a>
+                    {% else %}
+                        <a class="nav-link {% if request.path == '/login' %}active{% endif %}" href="/login">Login</a>
+                    {% endif %}
+                </li>
+            </ul>
+        </div>
+    </nav>
+
+
+    <div class="container p-0">
+        <div id="details" class="row" style="padding-top: 30px">
+            <div class="col-md-4 border-end " style="padding-bottom: 200px; padding-top: 10px">
+                <div class="img-container mt-4">
+                    <a id="readPdfBtn" href="#" class="container">
+                        <img src="{{ url_for('static', filename='covers/' + book['Cover_Page']) }}" alt="{{ book['B_Name'] }}" width="375" height="375">
+                        {% if status == 'Reading' %}
+                            <div class="overlay-text">Click To Read</div>
+                        {% elif book['Availability'] == 'Unavailable' %}
+                            <div class="overlay-text">Unavailable</div>
+                        {% else %}
+                            <div class="overlay-text">Click To Preview</div>
+                        {% endif %}
+                    </a>
+                </div>
+            </div>
+            <div class="col-md-7 mt-5">
+                <div class="d-flex justify-content-between">
+                    <div class="h1 pe-4 pb-3" style="max-width: 75%">
+                        {% if book['B_Name']|length > 50 %}
+                            {{ book['B_Name'][:50] + '...' }}
+                        {% else %}
+                            {{ book['B_Name']}}
+                        {% endif %}
+                    </div>
+                    <div class="container justify-content-center align-items-start pb-3 text-muted">
+                        By {{ book['Auth_Name'] }}
+                    </div>
+                    <div class="container justify-content-center align-items-end pb-3 text-muted">
+                        ({{ book['Rating'] }})
+                    </div>
+                </div>
+                <div class="d-flex justify-content-start">
+                    <div class="text-muted pe-5 ps-3">{{ book['Genre'] }}</div>
+                    <div class="text-muted">{{ book['No_of_Pages'] }} Pages</div>
+                </div>
+                <br>
+                {%  if user_type == 'Librarian' %}
+                    <div class="text-muted pe-5 ps-3">book_id: {{ book['Book_ID'] }}</div>
+                {% endif %}
+                <div class="text-primary-emphasis pt-5 ps-2 pb-5 fs-5">{{ book['Description'] }}</div>
+                <br>
+                <div class="text-primary-emphasis h3 ps-4">
+                    ₹{{ book['Price'] }}
+                </div>
+                <br>
+                 {% if book['Availability'] == 'Available' %}
+                    <div class="row ps-4">
+                        {% if downloaded == 'Yes' %}
+                            <div class="col-md-8">
+                                <a id="reDownloadPdfButton" href="/download_pdf?book_id={{ book['Book_ID'] }}" class="btn btn-primary mt-3">Re-Download PDF</a>
+                            </div>
+                        {% else %}
+                            <div class="col-md-8">
+                                <a id="downloadPdfButton" href="#" class="btn btn-primary mt-3">Download PDF</a>
+                            </div>
+                        {% endif %}
+                        <div class="col-md-4">
+                            <script>
+                                console.log("{{ status }}");
+                            </script>
+                            {% if status == 'Requested' %}
+                                <a id="pendingBookButton" href="/request?book_id={{ book['Book_ID'] }}" class="btn btn-success mt-3 disabled" tabindex="-1" aria-disabled="true">Request Pending...</a>
+                            {% elif status == 'Reading' %}
+                                <a id="returnBookButton" href="/return?book_id={{ book['Book_ID'] }}" class="btn btn-success mt-3">Return Book</a>
+                            {% elif status == 'Declined' %}
+                                <a id="declinedButton" class="btn btn-danger mt-3 disabled" tabindex="-1" aria-disabled="true">Request Declined</a>
+                            {% else %}
+                                <a id="requestAccessLink" href="/request?book_id={{ book['Book_ID'] }}" class="btn btn-success mt-3">Request Access to Read</a>
+                            {% endif %}
+                        </div>
+                        <div class="col-md-10 mt-4">
+                            {% if error_message %}
+                                <p class="mt-2 text-danger">{{ error_message }}</p>
+                            {% endif %}
+                            {% if status == 'Reading' %}
+                                <p>Deadline: {{ deadline }}</p>
+                            {% elif status == 'Declined' %}
+                                <p>Librarian Comments: {{ comment }}</p>
+                            {% elif status == 'Revoked' %}
+                                <p>Access Revoked(Deadline: {{ deadline }})</p>
+                            {% endif %}
+                        </div>
+                    </div>
+                {% else %}
+                    <div class="row">
+                        <div class="col-md-6">
+                            <p class="fw-bold text-dark">CURRENTLY NOT AVAILABLE!!</p>
+                        </div>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+        <div id="pdfContainer" class="modal-overlay col-md-12" style="display: none;">
+        </div>
+    </div>
+    <div class="modal" id="confirmDownloadModal" tabindex="-1" role="dialog" aria-labelledby="confirmDownloadLabel" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered" role="document">
+            <div class="modal-content bg-body-tertiary">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="confirmDownloadLabel">Confirm Download</h5>
+                    <button type="button" class="btn-close" id="closeModal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    Are you sure you want to download "{{ book['B_Name'] }}"?
+                    <br>
+                        ₹{{ book['Price'] }}
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-outline-secondary" id="cancelDownloadBtn" data-bs-dismiss="modal">Cancel</button>
+                    <button type="button" class="btn btn-primary" id="confirmDownloadBtn">Download</button>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="modal" id="confirmReturnModal" tabindex="-1" role="dialog" aria-labelledby="confirmReturnLabel" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered" role="document">
+            <div class="modal-content bg-body-tertiary">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="confirmReturnLabel">Confirm Return</h5>
+                    <button type="button" class="btn-close" id="closeReturnModal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    Are you sure you want to return "{{ book['B_Name'] }}"?
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-outline-secondary" id="cancelReturnBtn" data-bs-dismiss="modal">Cancel</button>
+                    <button type="button" class="btn btn-primary" id="confirmReturnBtn">Confirm Return</button>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="modal" id="feedbackModal" tabindex="-1" role="dialog" aria-labelledby="feedbackModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered" role="document">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="Feedback">Feedback</h5>
+                    <button type="button" class="btn-close" id="closeFeedbackModalBtn" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="feedbackForm">
+                        <div class="form-group">
+                            <label for="rating">Rating:</label>
+                            <input type="number" class="form-control" id="rating" value="5" name="rating" min="1" max="5" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="feedbackText">Feedback:</label>
+                            <textarea class="form-control" id="feedbackText" name="feedback" rows="3" required></textarea>
+                        </div>
+                        <div class="d-flex justify-content-end mt-3">
+                            <button type="button" id="submitFeedbackBtn" class="btn btn-primary">Submit</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+    <footer class="footer mt-5 bg-dark" style="padding: 10px 0; bottom: 0;">
+        <div class="container d-flex justify-content-between">
+            <span class="text-light fst-italic">© 2024 BookSelf Plus. All rights reserved.</span>
+            <span class="text-light fst-italic">By Ritesh V</span>
+        </div>
+    </footer>
+</body>
+</html>

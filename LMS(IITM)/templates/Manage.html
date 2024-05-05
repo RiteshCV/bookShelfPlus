@@ -1,0 +1,939 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>User Profile</title>
+    <link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='css/bootstrap.min.css') }}">
+</head>
+<body>
+    <header>
+        <nav class="navbar navbar-expand-md navbar-dark bg-dark">
+            <a class="navbar-brand" href="/">
+                <img class="img-thumbnail bg-dark border-0" src="{{ url_for('static', filename='Logo.png') }}" width="100" height="60" alt="TextTrove">
+            </a>
+            <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarSupportedContent" aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarSupportedContent">
+                <ul class="navbar-nav ml-auto">
+                    <li class="nav-item h4">
+                        <a class="nav-link {% if request.path == '/' or request.path.startswith('/book') %}active{% endif %}" href="/">Home</a>
+                    </li>
+                    <li class="nav-item h4">
+                        <a class="nav-link {% if request.path == '#' or request.path.startswith('/section') %}active{% endif %}" href="/sections">Sections</a>
+                    </li>
+                    {%  if user_type == 'Librarian' %}
+                        <li class="nav-item h4">
+                            <a class="nav-link {% if request.path == '/Manage' %}active{% endif %}" href="/Manage">Manage</a>
+                        </li>
+                    {% endif %}
+                    <li class="nav-item h4">
+                        <a class="nav-link {% if request.path == '/account' %}active{% endif %}" href="/account">Account</a>
+                    </li>
+                </ul>
+            </div>
+        </nav>
+    </header>
+    <main>
+        <div class="container mt-5 pb-4" style="padding-top: 4%">
+            <h1 class="mb-4">Manage Content</h1>
+            <!-- Navigation Menu -->
+            <div class="accordion" id="manageMenu">
+                <!-- Books Section -->
+                <div class="card">
+                    <div class="card-header" id="booksHeading">
+                        <h2 class="mb-0">
+                                Books
+                        </h2>
+                    </div>
+                    <div>
+                        <div class="card-body">
+                            <ul>
+                                <li id="addBookBtn">Add Books</li>
+                                <li id="editBookBtn">Edit Books</li>
+                                <li id="delBookBtn">Delete Books</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="modal fade" id="addBookModal" tabindex="-1" role="dialog" aria-labelledby="addBookModalLabel" aria-hidden="true">
+                    <div class="modal-dialog modal-dialog-centered modal-lg" role="document">
+                        <div class="modal-content bg-body-tertiary">
+                            <div class="modal-header">
+                                <h5 class="modal-title" id="addBookModalLabel">Add Book</h5>
+                                <button type="button" class="btn-close" data-dismiss="modal" aria-label="Close"></button>
+                            </div>
+                            <div class="modal-body">
+                                <form id="addBookForm" action="/manage/addBook" method="POST">
+                                    <div class="row">
+                                        <div class="col-md-6">
+                                            <div class="mb-3">
+                                                <label for="bookTitle" class="form-label">Book Title:</label>
+                                                <input type="text" class="form-control" id="bookTitle" name="B_Name" required>
+                                            </div>
+                                            <div class="mb-3">
+                                                <label for="authorName" class="form-label">Author Name:</label>
+                                                <input type="text" class="form-control" id="authorName" name="Auth_Name" required>
+                                            </div>
+                                            <div class="mb-3">
+                                                <label for="genre" class="form-label">Genre:</label>
+                                                <input type="text" class="form-control" id="genre" name="Genre" required>
+                                            </div>
+                                            <div class="mb-3">
+                                                <label for="pages" class="form-label">Number of Pages:</label>
+                                                <input type="number" class="form-control" id="pages" name="No_of_Pages" required>
+                                            </div>
+                                            <div class="mb-3">
+                                                <label for="contentRated" class="form-label">Content Rated:</label>
+                                                <input type="text" class="form-control" id="contentRated" name="Content_Rated" required>
+                                            </div>
+                                            <div class="mb-3">
+                                                <label for="releaseDate" class="form-label">Date of Release:</label>
+                                                <input type="date" class="form-control" id="releaseDate" name="Date_of_Release" required>
+                                            </div>
+                                        </div>
+                                        <div class="col-md-6">
+                                            <div class="mb-3">
+                                                <label for="rating" class="form-label">Rating:</label>
+                                                <input type="number" step="0.1" class="form-control" id="rating" name="Rating" required>
+                                            </div>
+                                            <div class="mb-3">
+                                                <label for="price" class="form-label">Price:</label>
+                                                <input type="number" step="0.01" class="form-control" id="price" name="Price" required>
+                                            </div>
+                                            <div class="mb-3">
+                                                <label for="coverPage" class="form-label">Cover Page URL:</label>
+                                                <input type="text" class="form-control" id="coverPage" name="Cover_Page" required>
+                                            </div>
+                                            <div class="mb-3">
+                                                <label for="description" class="form-label">Description:</label>
+                                                <textarea class="form-control" id="description" name="Description" rows="3" required></textarea>
+                                            </div>
+                                            <div class="mb-3">
+                                                <label for="pdfUrl" class="form-label">PDF URL:</label>
+                                                <input type="text" class="form-control" id="pdfUrl" name="PDF" required>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </form>
+                            </div>
+                            <div class="modal-footer">
+                                <button type="button" class="btn btn-outline-secondary" data-dismiss="modal">Cancel</button>
+                                <button type="submit" form="addBookForm" class="btn btn-primary">Add Book</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal fade" id="editBookModal" tabindex="-1" role="dialog" aria-labelledby="editBookModalLabel" aria-hidden="true">
+                    <div class="modal-dialog modal-lg" role="document">
+                        <div class="modal-content">
+                            <div class="modal-header">
+                                <h5 class="modal-title" id="editBookModalLabel">Edit Book</h5>
+                                <button type="button" class="btn-close" data-dismiss="modal" aria-label="Close"></button>
+                            </div>
+                            <div class="modal-body">
+                                <form id="editBookForm">
+                                    <div class="form-group">
+                                        <label for="bookNameInput">Enter Book Name:</label>
+                                        <input type="text" class="form-control" id="bookNameInput" placeholder="Enter book name">
+                                    </div>
+                                    <div class="form-group">
+                                        <label for="authorNameInput">Enter Author Name:</label>
+                                        <input type="text" class="form-control" id="authorNameInput" placeholder="Enter author name">
+                                    </div>
+                                    <div class="form-group">
+                                        <label for="pagesInput">Enter Number of Pages:</label>
+                                        <input type="number" class="form-control" id="pagesInput" placeholder="Enter number of pages">
+                                    </div>
+                                    <div id="bookDetailsContainer"></div>
+                                </form>
+                            </div>
+                            <div class="modal-footer">
+                                <button type="button" class="btn btn-secondary" data-dismiss="modal" id="closeEditModal">Close</button>
+                                <button type="button" class="btn btn-primary" id="fetchBookDetailsBtn">Fetch Details</button>
+                                <button type="button" class="btn btn-success" id="applyBookDetailsBtn" style="display: none;">Apply</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal fade" id="deleteBookModal" tabindex="-1" role="dialog" aria-labelledby="deleteBookModalLabel" aria-hidden="true">
+                    <div class="modal-dialog modal-lg" role="document">
+                        <div class="modal-content">
+                            <div class="modal-header">
+                                <h5 class="modal-title" id="deleteBookModalLabel">Delete Book</h5>
+                                <button type="button" class="btn-close" data-dismiss="modal" aria-label="Close"></button>
+                            </div>
+                            <div class="modal-body">
+                                <form id="deleteBookForm">
+                                    <div class="form-group">
+                                        <label for="delBookNameInput">Enter Book Name:</label>
+                                        <input type="text" class="form-control" id="delBookNameInput" placeholder="Enter book name">
+                                    </div>
+                                    <div class="form-group">
+                                        <label for="delAuthorNameInput">Enter Author Name:</label>
+                                        <input type="text" class="form-control" id="delAuthorNameInput" placeholder="Enter author name">
+                                    </div>
+                                    <div class="form-group">
+                                        <label for="delPagesInput">Enter Number of Pages:</label>
+                                        <input type="number" class="form-control" id="delPagesInput" placeholder="Enter number of pages">
+                                    </div>
+                                    <div id="delBookDetailsContainer"></div>
+                                </form>
+                            </div>
+                            <div class="modal-footer">
+                                <button type="button" class="btn btn-secondary" data-dismiss="modal" id="closeDeleteModal">Close</button>
+                                <button type="button" class="btn btn-danger" id="deleteBookBtn">Delete Book</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="card">
+                    <div class="card-header" id="sectionsHeading">
+                        <h2 class="mb-0">
+                                Sections
+                        </h2>
+                    </div>
+                    <div>
+                        <div class="card-body">
+                            <ul>
+                                <li id="addSectionBtn">Add Sections</li>
+                                <li id="editSectionBtn">Edit Sections</li>
+                                <li id="delSectionBtn">Delete Sections</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal fade" id="addSectionModal" tabindex="-1" role="dialog" aria-labelledby="addSectionModalLabel" aria-hidden="true">
+                    <div class="modal-dialog modal-dialog-centered modal-lg" role="document">
+                        <div class="modal-content bg-body-tertiary">
+                            <div class="modal-header">
+                                <h5 class="modal-title" id="addSectionModalLabel">Add Section</h5>
+                                <button type="button" class="btn-close" data-dismiss="modal" aria-label="Close"></button>
+                            </div>
+                            <div class="modal-body">
+                                <form id="addSectionForm" action="/manage/addSection" method="POST">
+                                    <div class="row">
+                                        <div class="col-md-6">
+                                            <div class="mb-3">
+                                                <label for="sectionTitle" class="form-label">Section Title:</label>
+                                                <input type="text" class="form-control" id="sectionTitle" name="S_Name" required>
+                                            </div>
+                                            <div class="mb-3">
+                                                <label for="secDescription" class="form-label">Description:</label>
+                                                <textarea class="form-control" id="secDescription" name="secDescription" rows="3" required></textarea>
+                                            </div>
+                                        </div>
+                                        <div class="col-md-6">
+                                            <div class="mb-3">
+                                                <label for="secCoverImg" class="form-label">Cover Image URL:</label>
+                                                <input type="text" class="form-control" id="secCoverImg" name="secCoverImg" required>
+                                            </div>
+                                            <div class="mb-3">
+                                                <label for="assignTo" class="form-label">Books:</label>
+                                                <input type="text" class="form-control" id="assignTo" name="assignTo" required>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </form>
+                            </div>
+                            <div class="modal-footer">
+                                <button type="button" class="btn btn-outline-secondary" data-dismiss="modal">Cancel</button>
+                                <button type="submit" form="addSectionForm" class="btn btn-primary">Add Section</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal fade" id="editSectionModal" tabindex="-1" role="dialog" aria-labelledby="editSectionModalLabel" aria-hidden="true">
+                    <div class="modal-dialog modal-lg" role="document">
+                        <div class="modal-content">
+                            <div class="modal-header">
+                                <h5 class="modal-title" id="editSectionModalLabel">Edit Section</h5>
+                                <button type="button" class="btn-close" data-dismiss="modal" aria-label="Close"></button>
+                            </div>
+                            <div class="modal-body">
+                                <form id="editSectionForm">
+                                    <div class="form-group">
+                                        <label for="sectionNameInput">Enter Section Name:</label>
+                                        <input type="text" class="form-control" id="sectionNameInput" placeholder="Enter section name">
+                                    </div>
+                                    <div id="sectionDetailsContainer"></div>
+                                </form>
+                            </div>
+                            <div class="modal-footer">
+                                <button type="button" class="btn btn-secondary" data-dismiss="modal" id="closeEditModal">Close</button>
+                                <button type="button" class="btn btn-primary" id="fetchSectionDetailsBtn">Fetch Details</button>
+                                <button type="button" class="btn btn-success" id="applySectionDetailsBtn" style="display: none;">Apply</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal fade" id="deleteSectionModal" tabindex="-1" role="dialog" aria-labelledby="deleteSectionModalLabel" aria-hidden="true">
+                    <div class="modal-dialog modal-lg" role="document">
+                        <div class="modal-content">
+                            <div class="modal-header">
+                                <h5 class="modal-title" id="deleteSectionModalLabel">Delete Section</h5>
+                                <button type="button" class="btn-close" data-dismiss="modal" aria-label="Close"></button>
+                            </div>
+                            <div class="modal-body">
+                                <form id="deleteSectionForm">
+                                    <div class="form-group">
+                                        <label for="delSectionNameInput">Enter Section Name:</label>
+                                        <input type="text" class="form-control" id="delSectionNameInput" placeholder="Enter Section name">
+                                    </div>
+                                    <div id="delSectionDetailsContainer"></div>
+                                </form>
+                            </div>
+                            <div class="modal-footer">
+                                <button type="button" class="btn btn-secondary" data-dismiss="modal" id="closeDeleteModal">Close</button>
+                                <button type="button" class="btn btn-danger" id="deleteSectionBtn">Delete Section</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="card">
+                    <div class="card-header" id="requestsHeading">
+                        <h2 class="mb-0">
+                                Requests
+                        </h2>
+                    </div>
+                    <div>
+                        <div class="card-body">
+                            <ul>
+                                <li id="pendingRequests">Pending</li>
+                                <li id="deniedRequests">Denied</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="modal fade" id="viewRequestsModal" tabindex="-1" role="dialog" aria-labelledby="viewRequestsModalLabel" aria-hidden="true">
+                    <div class="modal-dialog modal-lg" role="document">
+                        <div class="modal-content">
+                            <div class="modal-header">
+                                <h5 class="modal-title" id="viewRequestsModalLabel">View Requests</h5>
+                                <button type="button" class="btn-close" data-dismiss="modal" aria-label="Close"></button>
+                            </div>
+                            <div class="modal-body">
+                                <ul id="requestsList" class="list-group">
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <div class="card-header" id="statusHeading">
+                        <h2 class="mb-0">
+                                User Status
+                        </h2>
+                    </div>
+                </div>
+                <div class="modal fade" id="userStatusModal" tabindex="-1" role="dialog" aria-labelledby="userStatusModalLabel" aria-hidden="true">
+                    <div class="modal-dialog" role="document">
+                        <div class="modal-content">
+                        <div class="modal-header">
+                            <h5 class="modal-title" id="userStatusModalLabel">Enter User ID</h5>
+                            <button type="button" class="btn-close" data-dismiss="modal" aria-label="Close"></button>
+                        </div>
+                        <div class="modal-body">
+                            <div class="form-group">
+                                <label for="userIdInput">User ID:</label>
+                                <input type="text" class="form-control" id="userIdInput" placeholder="Enter User ID">
+                            </div>
+                        </div>
+                        <div class="modal-body" id="userStatusModalBody"></div>
+                            <div class="modal-footer">
+                                <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+                                <button type="button" class="btn btn-primary" id="fetchStatusBtn">Fetch</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <footer class="footer mt-5 bg-dark" style="padding: 10px 0; bottom: 0;">
+        <div class="container d-flex justify-content-between">
+            <span class="text-light fst-italic">© 2024 BookSelf Plus. All rights reserved.</span>
+            <span class="text-light fst-italic">By Ritesh V</span>
+        </div>
+    </footer>
+    <script>
+        function displayBooksInModal(booksInUse, userId) {
+            const modalBody = document.getElementById('userStatusModalBody');
+            modalBody.innerHTML = '';
+            booksInUse.forEach(book => {
+                const bookItem = document.createElement('div');
+                bookItem.className = 'book-item';
+                bookItem.innerHTML = `
+                    <p><strong>Request ID:</strong> ${book.Req_ID}</p>
+                    <p><strong>Book Name:</strong> ${book.Book_Name}</p>
+                    <p><strong>Author:</strong> ${book.Author_Name}</p>
+                    <p><strong>Total Pages:</strong> ${book.No_of_Pages}</p>
+                    <p><strong>Date of Issue:</strong> ${book.Date_of_Issue}</p>
+                    <p><strong>Deadline:</strong> ${book.Deadline}</p>
+                    <p><strong>Downloaded:</strong> ${book.Downloaded}</p>
+                    <p><strong>Download Date:</strong> ${book.Download_date}</p>
+                    <p><strong>Current Page:</strong> ${book.Current_Page}</p>
+                    <button class="btn btn-danger revoke-btn" data-book-id="${book.Book_ID}" data-user-id="${userId}">Revoke</button>
+                `;
+
+                const revokeButton = bookItem.querySelector('.revoke-btn');
+                revokeButton.addEventListener('click', () => {
+                    const bookId = revokeButton.getAttribute('data-book-id');
+                    const userId = revokeButton.getAttribute('data-user-id');
+                    handleRevokeAction(userId, bookId, bookItem);
+                });
+
+                modalBody.appendChild(bookItem);
+            });
+
+            $('#userStatusModal').modal('show');
+        }
+        function handleRevokeAction(userId, bookId, bookItem) {
+            fetch(`/revoke_book?userId=${userId}&bookId=${bookId}`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ userId, bookId })
+            })
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error('Failed to revoke book');
+                }
+                return response.json();
+            })
+            .then(data => {
+                console.log(data.message);
+                bookItem.remove();
+            })
+            .catch(error => {
+                console.error('Error revoking book:', error);
+                alert('Failed to revoke book. Please try again.');
+            });
+        }
+        function fetchRequests(type) {
+            fetch(`/requests?type=${type}`)
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error('Fetch Failed');
+                    }
+                    return response.json();
+                })
+                .then(data => {
+                    const requestsList = document.getElementById('requestsList');
+                    requestsList.innerHTML = '';
+                    data.forEach(request => {
+                        const listItem = document.createElement('li');
+                        listItem.className = 'list-group-item d-flex justify-content-between align-items-center';
+                        listItem.innerHTML = `Request ID: ${request.Req_ID}, User ID: ${request.Usr_ID}, Author Name: ${request.Auth_Name}<br>
+                        Book Name: ${request.B_Name}<br>
+                        Rated: ${request.Content_Rated}, Age: ${request.Age}, Request Date: ${request.Req_Date}`;
+                        const buttonContainer = document.createElement('div');
+                        buttonContainer.className = 'button-container';
+                        const acceptButton = document.createElement('button');
+                        acceptButton.textContent = 'Accept';
+                        acceptButton.className = 'btn btn-success';
+                        acceptButton.addEventListener('click', () => {
+                            const requestId = request.Req_ID;
+                            fetch(`/process_request?id=${requestId}&action=accept`, {
+                                method: 'POST',
+                                headers: {
+                                    'Content-Type': 'application/json'
+                                }
+                            })
+                            .then(response => {
+                                if (!response.ok) {
+                                    throw new Error('Failed to process request');
+                                }
+                                listItem.remove();
+                            })
+                            .catch(error => {
+                                console.error('Error processing request:', error);
+                                alert('Failed to process request. Please try again.');
+                            });
+                        });
+                        const denyButton = document.createElement('button');
+                        denyButton.textContent = 'Deny';
+                        denyButton.className = 'btn btn-danger';
+                        denyButton.addEventListener('click', () => {
+                            const requestId = request.Req_ID;
+                            fetch(`/process_request?id=${requestId}&action=deny`, {
+                                method: 'POST',
+                                headers: {
+                                    'Content-Type': 'application/json'
+                                }
+                            })
+                            .then(response => {
+                                if (!response.ok) {
+                                    throw new Error('Failed to process request');
+                                }
+                                listItem.remove();
+                            })
+                            .catch(error => {
+                                console.error('Error processing request:', error);
+                                alert('Failed to process request. Please try again.');
+                            });
+                        });
+                        buttonContainer.appendChild(acceptButton);
+                        buttonContainer.appendChild(denyButton);
+                        listItem.appendChild(buttonContainer);
+                        requestsList.appendChild(listItem);
+                    });
+
+                    // Show the modal
+                    const viewRequestsModal = new bootstrap.Modal(document.getElementById('viewRequestsModal'), {backdrop: 'static'});
+                    viewRequestsModal.show();
+                })
+                .catch(error => {
+                    console.error('Error fetching requests:', error);
+                    alert('Failed to fetch requests. Please try again.');
+                });
+        }
+        document.addEventListener('DOMContentLoaded', function() {
+            const addBookBtn = document.getElementById('addBookBtn');
+            const addBookModalElement = document.getElementById('addBookModal');
+            const addBookModal = new bootstrap.Modal(addBookModalElement, { backdrop: 'static' });
+            const closeModalButton = document.getElementById('closeEditModal');
+            const form = document.getElementById('addBookForm');
+            const editBookBtn = document.getElementById('editBookBtn');
+            const editBookModalElement = document.getElementById('editBookModal');
+            const editBookModal = new bootstrap.Modal(editBookModalElement, { backdrop: 'static' });
+            const fetchBookDetailsBtn = document.getElementById('fetchBookDetailsBtn');
+            const applyBookDetailsBtn = document.getElementById('applyBookDetailsBtn');
+            const bookNameInput = document.getElementById('bookNameInput');
+            const authorNameInput = document.getElementById('authorNameInput');
+            const pagesInput = document.getElementById('pagesInput');
+            const bookDetailsContainer = document.getElementById('bookDetailsContainer');
+            addBookBtn.addEventListener('click', function(event) {
+                event.preventDefault();
+                addBookModal.show();
+            });
+            addBookBtn.addEventListener('mouseenter', function() {
+                addBookBtn.style.cursor = 'pointer';
+            });
+            addBookBtn.addEventListener('mouseleave', function() {
+                addBookBtn.style.cursor = 'default';
+            });
+            const addBookForm = document.getElementById("addBookForm");
+            addBookForm.addEventListener("submit", function(event) {
+                event.preventDefault();
+
+                const pagesInput = document.getElementById("pages");
+                const priceInput = document.getElementById("price");
+                const ratingInput = document.getElementById("rating");
+                const coverPageInput = document.getElementById("coverPage");
+                const pdfUrlInput = document.getElementById("pdfUrl");
+
+                const pages = parseFloat(pagesInput.value);
+                const price = parseFloat(priceInput.value);
+                const rating = parseFloat(ratingInput.value);
+                const coverPageUrl = coverPageInput.value.trim().toLowerCase();
+                const pdfUrl = pdfUrlInput.value.trim().toLowerCase();
+
+                if (isNaN(pages) || pages <= 0) {
+                    alert("Please enter a valid number of pages (must be greater than 0).");
+                    pagesInput.focus();
+                    return;
+                }
+
+                if (isNaN(price) || price <= 0) {
+                    alert("Please enter a valid positive price.");
+                    priceInput.focus();
+                    return;
+                }
+
+                if (isNaN(rating) || rating < 1 || rating > 5) {
+                    alert("Please enter a rating between 1 and 5.");
+                    ratingInput.focus();
+                    return;
+                }
+
+                if (!coverPageUrl.endsWith(".jpg")) {
+                    alert("Please enter a valid cover page URL ending with '.jpg'.");
+                    coverPageInput.focus();
+                    return;
+                }
+
+                if (!pdfUrl.endsWith(".pdf")) {
+                    alert("Please enter a valid PDF URL ending with '.pdf'.");
+                    pdfUrlInput.focus();
+                    return;
+                }
+
+                const formData = new FormData(addBookForm);
+
+                fetch("/manage/addBook", {
+                    method: "POST",
+                    body: formData
+                })
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error("Failed to add book");
+                    }
+                    return response.json(); // Parse response JSON
+                })
+                .then(data => {
+                    // Check if 'message' exists in the response
+                    if (data && data.message) {
+                        alert(data.message);
+                        addBookModal.hide();
+                        form.reset();
+                    } else {
+                        throw new Error("Invalid response from server");
+                    }
+                })
+                .catch(error => {
+                    console.error('Error adding book:', error);
+                    alert("Failed to add book. Please try again.");
+                });
+            });
+            editBookBtn.addEventListener('click', function(event) {
+                event.preventDefault();
+                editBookModal.show();
+            });
+            fetchBookDetailsBtn.addEventListener('click', function() {
+                const bookName = bookNameInput.value.trim();
+                const authorName = authorNameInput.value.trim();
+                const pages = parseInt(pagesInput.value);
+                const editBookForm = document.getElementById('editBookForm');
+                fetch(`/editBooks?name=${bookName}&author=${authorName}&pages=${pages}`)
+                    .then(response => {
+                        if (!response.ok) {
+                            throw new Error('Book not found');
+                        }
+                        return response.json();
+                    })
+                    .then(data => {
+                        const { Book_ID, B_Name, Auth_Name, Genre, No_of_Pages, Content_Rated, Date_of_Release, Availability, Sec_ID, Rating, Price, Cover_Page, Description, PDF } = data;
+                        editBookForm.innerHTML = `
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <div class="form-group">
+                                        <label for="bookId">Name:</label>
+                                        <input type="text" class="form-control" id="bookId" value="${Book_ID}" disabled>
+                                    </div>
+                                    <div class="form-group">
+                                        <label for="editBookTitle">Name:</label>
+                                        <input type="text" class="form-control" id="editBookTitle" value="${B_Name}" required>
+                                    </div>
+                                    <div class="form-group">
+                                        <label for="editBookAuthor">Author:</label>
+                                        <input type="text" class="form-control" id="editBookAuthor" value="${Auth_Name}" required>
+                                    </div>
+                                    <div class="form-group">
+                                        <label for="editBookGenre">Genre:</label>
+                                        <input type="text" class="form-control" id="editBookGenre" value="${Genre}" required>
+                                    </div>
+                                    <div class="form-group">
+                                        <label for="editBookPages">No. of Pages:</label>
+                                        <input type="number" class="form-control" id="editBookPages" value="${No_of_Pages}" required>
+                                    </div>
+                                    <div class="form-group">
+                                        <label for="editBookRated">Content Rated:</label>
+                                        <input type="text" class="form-control" id="editBookRated" value="${Content_Rated}" required>
+                                    </div>
+                                    <div class="form-group">
+                                        <label for="editBookReleaseDate">Date of Release:</label>
+                                        <input type="text" class="form-control" id="editBookReleaseDate" value="${Date_of_Release}" required>
+                                    </div>
+                                    <div class="form-group">
+                                        <label for="editBookAvailability">Availability:</label>
+                                        <input type="text" class="form-control" id="editBookAvailability" value="${Availability}" required>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="form-group">
+                                        <label for="editBookSecID">Section ID:</label>
+                                        <input type="text" class="form-control" id="editBookSecID" value="${Sec_ID}" required>
+                                    </div>
+                                    <div class="form-group">
+                                        <label for="editBookRating">Rating:</label>
+                                        <input type="text" class="form-control" id="editBookRating" value="${Rating}" required>
+                                    </div>
+                                    <div class="form-group">
+                                        <label for="editBookPrice">Price:</label>
+                                        <input type="text" class="form-control" id="editBookPrice" value="${Price}" required>
+                                    </div>
+                                    <div class="form-group">
+                                        <label for="editBookCoverPage">Cover Page:</label>
+                                        <input type="text" class="form-control" id="editBookCoverPage" value="${Cover_Page}" required>
+                                    </div>
+                                    <div class="form-group">
+                                        <label for="editBookDescription">Description:</label>
+                                        <textarea class="form-control" id="editBookDescription" rows="6" required>${Description}</textarea>
+                                    </div>
+                                    <div class="form-group">
+                                        <label for="editBookPDF">PDF Link:</label>
+                                        <input type="text" class="form-control" id="editBookPDF" value="${PDF}" required>
+                                    </div>
+                                </div>
+                            </div>
+                        `;
+                        fetchBookDetailsBtn.style.display = 'none';
+                        applyBookDetailsBtn.style.display = 'inline-block';
+                    })
+                    .catch(error => {
+                        console.error('Error fetching book details:', error);
+                        bookDetailsContainer.innerHTML = ``;
+                        bookDetailsContainer.innerHTML = '<br><p class="text-danger">*Book not found. Please try again.</p>';
+                    });
+            });
+            applyBookDetailsBtn.addEventListener('click', function(event) {
+                event.preventDefault();
+                console.log('Applying book details');
+                // Retrieve form data
+                const bookId = parseInt(document.getElementById('bookId').value, 10);
+                const editBookTitle = document.getElementById('editBookTitle').value.trim();
+                const editBookAuthor = document.getElementById('editBookAuthor').value.trim();
+                const editBookGenre = document.getElementById('editBookGenre').value.trim();
+                const editBookPages = parseInt(document.getElementById('editBookPages').value, 10);
+                const editBookRated = document.getElementById('editBookRated').value.trim();
+                const editBookReleaseDate = document.getElementById('editBookReleaseDate').value.trim();
+                const editBookAvailability = document.getElementById('editBookAvailability').value.trim();
+                const editBookSecID = parseInt(document.getElementById('editBookSecID').value, 10);
+                const editBookRating = parseFloat(document.getElementById('editBookRating').value);
+                const editBookPrice = parseFloat(document.getElementById('editBookPrice').value);
+                const editBookCoverPage = document.getElementById('editBookCoverPage').value.trim();
+                const editBookDescription = document.getElementById('editBookDescription').value.trim();
+                const editBookPDF = document.getElementById('editBookPDF').value.trim();
+                if (!editBookTitle.trim() || !editBookAuthor.trim() || !editBookGenre.trim() ||
+                    !editBookCoverPage.trim() || !editBookDescription.trim() || !editBookPDF.trim()) {
+                    alert('All string fields must be non-empty and cannot consist only of whitespace.');
+                    return;
+                }
+                if (!editBookTitle) {
+                    alert('Please enter a valid book title.');
+                    return;
+                }
+                if (!editBookAuthor) {
+                    alert('Please enter a valid author name.');
+                    return;
+                }
+                if (!editBookGenre) {
+                    alert('Please enter a valid genre.');
+                    return;
+                }
+                if (isNaN(editBookPages) || editBookPages <= 0) {
+                    alert('Please enter a valid number of pages (must be a positive integer).');
+                    return;
+                }
+                if (!editBookRated) {
+                    alert('Please enter a valid content rating.');
+                    return;
+                }
+                function isValidDate(dateString) {
+                    const regex = /^\d{4}-\d{2}-\d{2}$/;
+                    if (!regex.test(dateString)) return false;
+                    const date = new Date(dateString);
+                    return !isNaN(date.getTime());
+                }
+                if (!editBookReleaseDate || !isValidDate(editBookReleaseDate)) {
+                    alert('Please enter a valid release date.');
+                    return;
+                }
+                if (!editBookAvailability) {
+                    alert('Please enter a valid availability status.');
+                    return;
+                }
+                if (isNaN(editBookSecID) || editBookSecID < 0) {
+                    alert('Please enter a valid section ID (must be a non-negative integer).');
+                    return;
+                }
+                if (isNaN(editBookRating) || editBookRating < 1 || editBookRating > 5) {
+                    alert('Please enter a valid rating between 1 and 5.');
+                    return;
+                }
+                if (isNaN(editBookPrice) || editBookPrice <= 0) {
+                    alert('Please enter a valid price (must be a positive number).');
+                    return;
+                }
+                if (!editBookCoverPage.toLowerCase().endsWith('.jpeg')) {
+                    alert('Please enter a valid cover page URL ending with ".jpeg".');
+                    return;
+                }
+                if (!editBookPDF.toLowerCase().endsWith('.pdf')) {
+                    alert('Please enter a valid PDF URL ending with ".pdf".');
+                    return;
+                }
+                console.log('Book ID:', bookId);
+                // Send update request to Flask backend
+                fetch('/updateBookDetails', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        editBookTitle: editBookTitle,
+                        editBookAuthor: editBookAuthor,
+                        editBookGenre: editBookGenre,
+                        editBookPages: editBookPages,
+                        editBookRated: editBookRated,
+                        editBookReleaseDate: editBookReleaseDate,
+                        editBookAvailability: editBookAvailability,
+                        editBookSecID: editBookSecID,
+                        editBookRating: editBookRating,
+                        editBookPrice: editBookPrice,
+                        editBookCoverPage: editBookCoverPage,
+                        editBookDescription: editBookDescription,
+                        editBookPDF: editBookPDF,
+                        bookId: bookId
+                    })
+                })
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error('Failed to update book details');
+                    }
+                    return response.json();
+                })
+                .then(data => {
+                    console.log(data);
+                    alert('Book details updated successfully.');
+                })
+                .catch(error => {
+                    console.error('Error updating book details:', error);
+                    alert('Failed to update book details. Please try again.');
+                });
+            });
+            closeModalButton.addEventListener('click', function(event) {
+                event.preventDefault();
+                window.location.reload();
+            });
+            editBookBtn.addEventListener('mouseenter', function() {
+                editBookBtn.style.cursor = 'pointer';
+            });
+            editBookBtn.addEventListener('mouseleave', function() {
+                editBookBtn.style.cursor = 'default';
+            });
+            const delBookBtn = document.getElementById('delBookBtn');
+            const deleteBookModal = new bootstrap.Modal(document.getElementById('deleteBookModal'), { backdrop: 'static' });
+            const closeDeleteModalBtn = document.getElementById('closeDeleteModal');
+            const deleteBookBtn = document.getElementById('deleteBookBtn');
+            const delBookNameInput = document.getElementById('delBookNameInput');
+            const delAuthorNameInput = document.getElementById('delAuthorNameInput');
+            const delPagesInput = document.getElementById('delPagesInput');
+            const delBookDetailsContainer = document.getElementById('delBookDetailsContainer');
+
+            delBookBtn.addEventListener('click', function(event) {
+                event.preventDefault();
+                deleteBookModal.show();
+            });
+            delBookBtn.addEventListener('mouseenter', function() {
+                delBookBtn.style.cursor = 'pointer';
+            });
+            delBookBtn.addEventListener('mouseleave', function() {
+                delBookBtn.style.cursor = 'default';
+            });
+            deleteBookBtn.addEventListener('click', function() {
+                const bookName = delBookNameInput.value.trim();
+                const authorName = delAuthorNameInput.value.trim();
+                const pages = parseInt(delPagesInput.value);
+
+                if (!bookName || !authorName || isNaN(pages) || pages <= 0) {
+                    alert('Please enter valid book details.');
+                    return;
+                }
+
+                fetch('/deleteBook', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        bookName: bookName,
+                        authorName: authorName,
+                        pages: pages
+                    })
+                })
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error('Failed to delete book');
+                    }
+                    return response.json();
+                })
+                .then(data => {
+                    alert(data.message);
+                    delBookNameInput.value = '';
+                    delAuthorNameInput.value = '';
+                    delPagesInput.value = '';
+                    deleteBookModal.hide();
+                })
+                .catch(error => {
+                    console.error('Error deleting book:', error);
+                    delBookDetailsContainer.innerHTML = `<br><p class="text-danger">*Error: ${error.message}</p>`;
+                });
+            });
+
+            closeDeleteModalBtn.addEventListener('click', function() {
+                delBookNameInput.value = '';
+                delAuthorNameInput.value = '';
+                delPagesInput.value = '';
+                deleteBookModal.hide();
+            });
+
+            const pendingRequests = document.getElementById('pendingRequests');
+            const deniedRequests = document.getElementById('deniedRequests');
+            const viewRequestsModal = new bootstrap.Modal(document.getElementById('viewRequestsModal'), { backdrop: 'static' });
+            pendingRequests.addEventListener('mouseenter', function() {
+                pendingRequests.style.cursor = 'pointer';
+            });
+            pendingRequests.addEventListener('mouseleave', function() {
+                pendingRequests.style.cursor = 'default';
+            });
+            pendingRequests.addEventListener('click', function(event) {
+                event.preventDefault();
+                viewRequestsModal.show();
+                fetchRequests('Pending');
+            });
+            deniedRequests.addEventListener('mouseenter', function() {
+                deniedRequests.style.cursor = 'pointer';
+            });
+            deniedRequests.addEventListener('mouseleave', function() {
+                deniedRequests.style.cursor = 'default';
+            });
+            deniedRequests.addEventListener('click', function(event) {
+                event.preventDefault();
+                viewRequestsModal.show();
+                fetchRequests('Denied');
+            });
+
+            const statusHeading = document.getElementById('statusHeading');
+            const userStatusModal = new bootstrap.Modal(document.getElementById('userStatusModal'), { backdrop: 'static' });
+            statusHeading.addEventListener('mouseenter', function() {
+                statusHeading.style.cursor = 'pointer';
+            });
+            statusHeading.addEventListener('mouseleave', function() {
+                statusHeading.style.cursor = 'default';
+            });
+            statusHeading.addEventListener('click', function(event) {
+                event.preventDefault();
+                userStatusModal.show();
+            });
+            const fetchStatusBtn = document.getElementById('fetchStatusBtn');
+            fetchStatusBtn.addEventListener('click', function() {
+                const userIdInput = document.getElementById('userIdInput').value;
+                fetch(`/user_status?id=${userIdInput}`)
+                    .then(response => {
+                        if (!response.ok) {
+                            throw new Error('Fetch Failed');
+                            }
+                        return response.json();
+                    })
+                    .then(data => {
+                        const booksInUse = data.booksInUse;
+                        console.log('Books in use:', booksInUse);
+                        displayBooksInModal(booksInUse, userIdInput);
+                      })
+                    .catch(error => {
+                        console.error('Error fetching user status:', error);
+                        alert('Failed to fetch user status. Please try again.');
+                    });
+            });
+        });
+    </script>
+</body>
+</html>

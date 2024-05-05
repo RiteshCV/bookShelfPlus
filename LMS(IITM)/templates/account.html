@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>User Profile</title>
+    <link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='css/bootstrap.min.css') }}">
+</head>
+<body>
+        <header>
+        <nav class="navbar navbar-expand-md navbar-dark bg-dark">
+            <a class="navbar-brand" href="/">
+                <img class="img-thumbnail bg-dark border-0" src="{{ url_for('static', filename='Logo.png') }}" width="100" height="60" alt="TextTrove">
+            </a>
+            <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarSupportedContent" aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarSupportedContent">
+                <ul class="navbar-nav ml-auto">
+                    <li class="nav-item h4">
+                        <a class="nav-link {% if request.path == '/' or request.path.startswith('/book') %}active{% endif %}" href="/">Home</a>
+                    </li>
+                    <li class="nav-item h4">
+                        <a class="nav-link {% if request.path == '#' or request.path.startswith('/section') %}active{% endif %}" href="/sections">Sections</a>
+                    </li>
+                    {%  if user_type == 'Librarian' %}
+                        <li class="nav-item h4">
+                            <a class="nav-link {% if request.path == '/Manage' %}active{% endif %}" href="/Manage">Manage</a>
+                        </li>
+                    {% endif %}
+                    <li class="nav-item h4">
+                        <a class="nav-link {% if request.path == '/account' %}active{% endif %}" href="/account">Account</a>
+                    </li>
+                </ul>
+            </div>
+        </nav>
+    </header>
+    <main>
+        <div class="container mt-5 d-flex justify-content-center align-content-center" style="padding-top: 3%; padding-bottom: 6%">
+            <div class="col-md-6">
+                <h2>User Profile</h2>
+                <div class="card mt-4">
+                    <div class="card-body">
+                        <p class="card-text"><strong>Username:</strong> {{ user['Usr_Name'] }}</p>
+                        <p class="card-text"><strong>Email:</strong> {{ user['Email'] }}</p>
+                        <p class="card-text"><strong>Date of Birth:</strong> {{ user['Date_of_Birth'] }}</p>
+                        <p class="card-text"><strong>Member Since:</strong> {{ user['Acc_Creation'] }}</p>
+                        <p class="card-text"><strong>Books Completed:</strong> {{ returned_count }}</p>
+                        <p class="card-text"><strong>Books Downloaded:</strong> {{ downloaded_count }}</p>
+                    </div>
+                </div>
+                <div class="mt-4">
+                    <a href="#" class="btn btn-danger" id="deleteBtn">Delete Account</a>
+                    <a href="{{ url_for('logout') }}" class="btn btn-primary float-end">Logout</a>
+                </div>
+            </div>
+        </div>
+
+        <!-- Confirmation Modal Dialog -->
+        <div class="modal" id="confirmDeleteModal" tabindex="-1" role="dialog" aria-labelledby="confirmDeleteLabel" aria-hidden="true">
+            <div class="modal-dialog modal-dialog-centered" role="document">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title">Confirm Deletion</h5>
+                        <button type="button" class="btn-close" id="closeModal" aria-label="Close"></button>
+                    </div>
+                    <div class="modal-body">
+                        <p>Are you sure you want to delete your account?</p>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-outline-secondary" id="cancelDeleteBtn">Cancel</button>
+                        <a href="{{ url_for('delete_account') }}" class="btn btn-outline-danger" id="confirmDeleteBtn">Delete</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <footer class="footer mt-5 bg-dark" style="padding: 10px 0; bottom: 0;">
+        <div class="container d-flex justify-content-between">
+            <span class="text-light fst-italic">© 2024 BookSelf Plus. All rights reserved.</span>
+            <span class="text-light fst-italic">By Ritesh V</span>
+        </div>
+    </footer>
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const deleteBtn = document.getElementById('deleteBtn');
+            const confirmDeleteModal = document.getElementById('confirmDeleteModal');
+            const cancelDeleteBtn = document.getElementById('cancelDeleteBtn');
+            const closeModalBtn = document.getElementById('closeModal');
+
+            deleteBtn.addEventListener('click', function() {
+                confirmDeleteModal.style.display = 'block';
+            });
+
+            cancelDeleteBtn.addEventListener('click', function() {
+                confirmDeleteModal.style.display = 'none';
+            });
+
+            closeModalBtn.addEventListener('click', function() {
+                confirmDeleteModal.style.display = 'none';
+            });
+            document.addEventListener('keydown', function(event) {
+                if (event.key === 'Escape' && confirmDeleteModal.style.display === 'block') {
+                    confirmDeleteModal.style.display = 'none';
+                }
+            });
+        });
+    </script>
+</body>
+</html>

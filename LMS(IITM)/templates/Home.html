@@ -1,0 +1,326 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Library Management System</title>
+    <link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='css/bootstrap.min.css') }}">
+    <style>
+        #suggestionsList div {
+            cursor: pointer;
+            padding: 10px 30px;
+            transition: background-color 0.2s ease;
+        }
+        #suggestionsList div:hover {
+            background-color: #f0f0f0;
+        }
+    </style>
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const searchInput = document.getElementById('searchInput');
+            const suggestionsList = document.getElementById('suggestionsList');
+            let selectedSuggestionIndex = -1;
+            function updateSelectedSuggestion() {
+                const suggestionItems = suggestionsList.querySelectorAll('.suggestion-item');
+                suggestionItems.forEach((item, index) => {
+                    if (index === selectedSuggestionIndex) {
+                        item.classList.add('selected');
+                        searchInput.value = item.textContent;
+                        item.style.backgroundColor = '#f0f0f0';
+                    } else {
+                        item.style.backgroundColor = 'transparent';
+                        item.classList.remove('selected');
+                    }
+                });
+            }
+            document.addEventListener('keydown', function(event) {
+                const searchInput = document.getElementById('searchInput');
+                const suggestionsList = document.getElementById('suggestionsList');
+                const suggestionItems = suggestionsList.querySelectorAll('div');
+                if (event.key === '/') {
+                    searchInput.focus();
+                    event.preventDefault();
+                } else if (event.key === 'ArrowDown') {
+                    selectedSuggestionIndex = Math.min(selectedSuggestionIndex + 1, suggestionItems.length - 1);
+                    updateSelectedSuggestion();
+                    event.preventDefault();
+                } else if (event.key === 'ArrowUp') {
+                    selectedSuggestionIndex = Math.max(selectedSuggestionIndex - 1, -1);
+                    updateSelectedSuggestion();
+                    event.preventDefault();
+                }
+                if (searchInput.value !== '' && event.key === 'Enter') {
+                    event.preventDefault();
+                    const query = searchInput.value.trim();
+                    window.location.href = `/books?query=${encodeURIComponent(query)}`;
+                }
+            });
+            searchInput.addEventListener('input', function() {
+                const query = searchInput.value.trim();
+                fetch('/search', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/x-www-form-urlencoded',
+                    },
+                    body: 'query=' + encodeURIComponent(query)
+                })
+                .then(response => response.json())
+                .then(data => {
+                    suggestionsList.innerHTML = '';
+                    if (data.clear === 1){
+                        suggestionsList.innerHTML = '';
+                    }
+                    else if (data.results && (data.results.length > 0 || data.authors.length > 0 || data.sections.length > 0) && data.clear === 0) {
+                        data.results.forEach((result) => {
+                            const item = document.createElement('div');
+                            item.textContent = result;
+                            item.classList.add('suggestion-item');
+                            suggestionsList.appendChild(item);
+                            item.addEventListener('click', function(event) {
+                                const clickedIndex = Array.from(suggestionsList.children).indexOf(item);
+                                searchInput.value = event.target.textContent;
+                                searchInput.focus();
+                                selectedSuggestionIndex = clickedIndex;
+                                updateSelectedSuggestion();
+                            });
+                        });
+                        data.authors.forEach((author) => {
+                            const item = document.createElement('div');
+                            item.textContent = author;
+                            item.classList.add('suggestion-item');
+                            suggestionsList.appendChild(item);
+                            item.addEventListener('click', function(event) {
+                                const clickedIndex = Array.from(suggestionsList.children).indexOf(item);
+                                searchInput.value = event.target.textContent;
+                                searchInput.focus();
+                                selectedSuggestionIndex = clickedIndex;
+                                updateSelectedSuggestion();
+                            });
+                        });
+                        data.sections.forEach((section) => {
+                            const item = document.createElement('div');
+                            item.textContent = section;
+                            item.classList.add('suggestion-item');
+                            suggestionsList.appendChild(item);
+                            item.addEventListener('click', function(event) {
+                                const clickedIndex = Array.from(suggestionsList.children).indexOf(item);
+                                searchInput.value = event.target.textContent;
+                                searchInput.focus();
+                                selectedSuggestionIndex = clickedIndex;
+                                updateSelectedSuggestion();
+                            });
+                        });
+                        selectedSuggestionIndex = -1;
+                    }
+                    else {
+                        const noResultsItem = document.createElement('div');
+                        noResultsItem.textContent = 'No results found';
+                        suggestionsList.appendChild(noResultsItem);
+                    }
+                })
+                .catch(error => {
+                    console.error('Error fetching search results:', error);
+                });
+            });
+            suggestionsList.addEventListener('click', (event) => {
+                if (event.target.tagName.toLowerCase() === 'div') {
+                    searchInput.value = event.target.textContent;
+                    event.preventDefault();
+                    searchInput.focus();
+                    const query = searchInput.value.trim();
+                    window.location.href = `/books?query=${encodeURIComponent(query)}`;
+                }
+            });
+        });
+    </script>
+</head>
+<body>
+    <nav class="navbar navbar-expand-md navbar-dark bg-dark">
+        <a class="navbar-brand tab-content tabindex-0" href="/">
+            <img class="img-thumbnail bg-dark border-0" src="{{ url_for('static', filename='Logo.png') }}" width="100" height="60" alt="TextTrove">
+        </a>
+        <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarSupportedContent" aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
+            <span class="navbar-toggler-icon"></span>
+        </button>
+
+        <div class="collapse navbar-collapse" id="navbarSupportedContent">
+            <ul class="navbar-nav ml-auto">
+                <li class="nav-item h4">
+                    <a class="nav-link {% if request.path == '/' or request.path.startswith('/book') %}active{% endif %}" href="/">Home</a>
+                </li>
+                <li class="nav-item h4">
+                    <a class="nav-link {% if request.path == '#' or request.path.startswith('/section') %}active{% endif %}" href="/sections">Sections</a>
+                </li>
+                {%  if user_type == 'Librarian' %}
+                    <li class="nav-item h4">
+                        <a class="nav-link {% if request.path == '/Manage' %}active{% endif %}" href="/Manage">Manage</a>
+                    </li>
+                {% endif %}
+                <li class="nav-item h4">
+                    {% if logged_in %}
+                        <a class="nav-link {% if request.path == '/account' %}active{% endif %}" href="/account">Account</a>
+                    {% else %}
+                        <a class="nav-link {% if request.path == '/login' %}active{% endif %}" href="/login">Login</a>
+                    {% endif %}
+                </li>
+            </ul>
+        </div>
+    </nav>
+
+
+    <div class="container mt-5 mb-0">
+        <div class="jumbotron mb-0 ">
+            <div class="container col-md-10 text-center">
+                <div class="input-group mt-3 rounded-pill text-end" style="max-width: 1050px;">
+                    <button class="btn btn-outline-primary border-2 border-dark mb-3" type="button" style=" border-right: 0px; border-bottom-left-radius: 10px; border-top-left-radius: 10px; padding-right: 0px" disabled>
+                        <img src="/static/search.jpg" alt="Search" width="30" height="30">
+                    </button><label for="searchInput"></label>
+                        <input id="searchInput" type="text" class="form-control form-control-lg border-2 border-dark border-opacity-75 mb-3" placeholder="Search by Title, Authors, or Sections" style="box-shadow: none; border-left: 0; border-bottom-right-radius: 10px; border-top-right-radius: 10px">
+                    <div class="container mt-0 mb-3">
+                         <div id="suggestionsList" class="list-group text-start"></div>
+                    </div>
+                </div>
+            </div>
+            <hr class="my-4 mb-5">
+            {% if logged_in %}
+                {% if not getting_started%}
+                    <h2 class="card-title mb-1">Now Reading</h2>
+                    {% set books = curr_books %}
+                {% else %}
+                    <h2 class="card-title fw-bold mb-3" style="font-family: Arial, sans-serif; font-size: 30px;">Get Started...</h2>
+                    {% set books = recommended_books %}
+                {% endif %}
+            {% else %}
+                <h2 class="card-title">Best Sellers</h2>
+                {% set books = best_sellers %}
+            {% endif %}
+            <div class="card mb-0">
+                <div class="card-body">
+                    <div class="row flex-nowrap row-cols-1 row-cols-md-5 overflow-x-auto">
+                        {% if not books %}
+                            <div class="col mb-0">
+                                <div class="card border-0">
+                                    <div class="card-body">
+                                        <h5 class="card-title">No books found</h5>
+                                    </div>
+                                </div>
+                            </div>
+                        {% endif %}
+                        {% for book in books %}
+                            <div class="col mb-0">
+                                <div class="card">
+                                    <a href="/book/{{ book['Book_ID'] }}" class="text-decoration-none text-dark">
+                                        <img src="{{ url_for('static', filename='covers/' + book['Cover_Page']) }}" class="img-thumbnail mx-auto d-flex" alt="{{ book['B_Name'] }}" style="max-width: 200px; max-height: 200px;">
+                                        <div class="card-body">
+                                            <h5 class="card-title mt-0 mb-1">
+                                                {% if book['B_Name']|length > 20 %}
+                                                    {{ book['B_Name'][:20] + '...' }}
+                                                {% else %}
+                                                    {{ book['B_Name'] }}
+                                                {% endif %}
+                                            </h5>
+                                            <p class="card-text mt-0 mb-0">{{ book['Auth_Name'] }}</p>
+                                            <div class="rating">
+                                                {% set full_stars = book['Rating']|int %}
+                                                {% for _ in range(0, full_stars) %}
+                                                    &#9733;
+                                                {% endfor %}
+                                            </div>
+                                            <p class="card-text mt-0 mb-0">{{ book['Content_Rated'] }}</p>
+                                        </div>
+                                    </a>
+                                </div>
+                            </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% if not getting_started%}
+            {% if logged_in %}
+                <h2 class="card-title mt-3">For You</h2>
+                {% set books = recommended_books %}
+            {% else %}
+                <h2 class="card-title mt-3">New releases</h2>
+                {% set books = new_releases %}
+            {% endif %}
+            <div class="card mb-0">
+                <div class="card-body">
+                    <div class="row flex-nowrap row-cols-1 row-cols-md-5 overflow-x-auto mb-0">
+                            {% for book in books %}
+                                <div class="col mb-0">
+                                    <div class="card">
+                                        <a href="/book/{{ book['Book_ID'] }}" class="text-decoration-none text-dark">
+                                            <img src="{{ url_for('static', filename='covers/' + book['Cover_Page']) }}" class="img-thumbnail mx-auto d-flex" alt="{{ book['B_Name'] }}" style="max-width: 200px; max-height: 200px;">
+                                            <div class="card-body">
+                                                <h5 class="card-title mt-0 mb-1">
+                                                    {% if book['B_Name']|length > 20 %}
+                                                        {{ book['B_Name'][:20] + '...' }}
+                                                    {% else %}
+                                                        {{ book['B_Name'] }}
+                                                    {% endif %}
+                                                </h5>
+                                                <p class="card-text mt-0 mb-0">{{ book['Auth_Name'] }}</p>
+                                                <div class="rating">
+                                                    {% set full_stars = book['Rating']|int %}
+                                                    {% for _ in range(0, full_stars) %}
+                                                        &#9733;
+                                                    {% endfor %}
+                                                </div>
+                                                <p class="card-text mt-0 mb-0">{{ book['Content_Rated'] }}</p>
+                                            </div>
+                                        </a>
+                                    </div>
+                                </div>
+                            {% endfor %}
+                        </div>
+                </div>
+            </div>
+            {% if logged_in %}
+                {% set books = comp_books %}
+                {% if books %}
+                    <h2 class="card-title mt-3">Completed</h2>
+                    <div class="card mb-0">
+                        <div class="card-body">
+                            <div class="row flex-nowrap row-cols-1 row-cols-md-5 overflow-x-auto">
+                                {% for book in books %}
+                                    <div class="col mb-0">
+                                        <div class="card">
+                                            <a href="/book/{{ book['Book_ID'] }}" class="text-decoration-none text-dark">
+                                                <img src="{{ url_for('static', filename='covers/' + book['Cover_Page']) }}" class="img-thumbnail mx-auto d-flex" alt="{{ book['B_Name'] }}" style="max-width: 200px; max-height: 200px;">
+                                                <div class="card-body">
+                                                    <h5 class="card-title mt-0 mb-1">
+                                                        {% if book['B_Name']|length > 20 %}
+                                                            {{ book['B_Name'][:20] + '...' }}
+                                                        {% else %}
+                                                            {{ book['B_Name'] }}
+                                                        {% endif %}
+                                                    </h5>
+                                                    <p class="card-text mt-0 mb-0">{{ book['Auth_Name'] }}</p>
+                                                    <div class="rating">
+                                                        {% set full_stars = book['Rating']|int %}
+                                                        {% for _ in range(0, full_stars) %}
+                                                            &#9733;
+                                                        {% endfor %}
+                                                    </div>
+                                                    <p class="card-text mt-0 mb-0">{{ book['Content_Rated'] }}</p>
+                                                </div>
+                                            </a>
+                                        </div>
+                                    </div>
+                                {% endfor %}
+                            </div>
+                        </div>
+                    </div>
+                {% endif %}
+            {% endif %}
+        {% endif %}
+    </div>
+    <footer class="footer mt-5 bg-dark" style="padding: 10px 0; bottom: 0;">
+        <div class="container d-flex justify-content-between">
+            <span class="text-light fst-italic">© 2024 BookSelf Plus. All rights reserved.</span>
+            <span class="text-light fst-italic">By Ritesh V</span>
+        </div>
+    </footer>
+</body>
+</html>
